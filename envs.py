@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from queue import SimpleQueue
 import numpy as np
 
 
@@ -95,7 +94,9 @@ class GridWorld:
                     delta = max(delta, abs(old_state_value - rv[x, y]))
         return rv
 
-    def get_optimal_values(self):
+    def get_optimal_values(self, terminal_state=None):
+        if terminal_state is None:
+            terminal_state = self.terminal_state
 
         def get_neighbours(state):
             rv = list()
@@ -110,18 +111,32 @@ class GridWorld:
             return rv
 
         rv = np.zeros(self.card, dtype=np.float32)
-        queue = SimpleQueue()
-        queue.put((self.terminal_state[0], self.terminal_state[1]))
-        while not queue.empty():
-            x1, y1 = queue.get()
-            reward = self.get_reward((x1, y1))
+        rv.fill(- np.inf)
+        queue = list()
+        for x in range(self.card[0]):
+            for y in range(self.card[1]):
+                if self.is_wall((x, y)):
+                    continue
+                queue.append((x, y))
+        rv[terminal_state[0], terminal_state[1]] = 0
+
+        while queue:
+            queue.sort(key=lambda v: rv[v[0], v[1]])
+            x1, y1 = queue.pop()
+            reward = 1 if x1 == terminal_state[0] and y1 == terminal_state[1] else 0
             neighbours = get_neighbours((x1, y1))
             for x2, y2 in neighbours:
-                if self.is_terminal((x2, y2)):
-                    continue
                 if rv[x2, y2] < reward + self.gamma * rv[x1, y1]:
                     rv[x2, y2] = reward + self.gamma * rv[x1, y1]
-                    queue.put((x2, y2))
+
+        # clean up
+        rv[terminal_state[0], terminal_state[1]] = 0
+        for x in range(self.card[0]):
+            for y in range(self.card[1]):
+                state = np.array([x, y])
+                if self.is_wall(state):
+                    rv[x, y] = 0
+
         return rv
 
     def get_action_values(self, policy, epsilon):
@@ -138,6 +153,14 @@ class GridWorld:
                     rv[state[0], state[1], action] = reward + self.gamma * \
                         state_values[next_state[0], next_state[1]]
         return rv
+
+    def get_value_range(self):
+        optimal_values = self.get_optimal_values()
+        for x in range(self.card[0]):
+            for y in range(self.card[1]):
+                if self.is_wall((x, y)) or self.is_terminal((x, y)):
+                    optimal_values[x, y] = np.nan
+        return (np.nanmin(optimal_values), np.nanmax(optimal_values))
 
     def print_grid(self, grid):
         to_print = ''

@@ -19,6 +19,10 @@ def parse_args():
         choices=['policy_iteration', 'new'],
         help='')
     parser.add_argument(
+        '--seed',
+        type=int,
+        help='')
+    parser.add_argument(
         '--gamma',
         type=float,
         required=True,
@@ -63,16 +67,18 @@ def run(env,
     record = list()
 
     if mode == 'policy_iteration':
-        action_map = np.zeros(env.card, dtype=np.uint8)
+        action_map = np.random.randint(4, size=env.card, dtype=np.uint8)
 
         def policy(action, state):
             return 1 if action_map[state[0], state[1]] == action else 0
     else:
-        weights = np.ones((env.card.tolist() + [env.num_actions])) * 0.25
+        weights = np.random.uniform(size=env.card.tolist() + [env.num_actions])
         for x in range(env.card[0]):
             for y in range(env.card[1]):
                 if env.is_wall((x, y)):
                     weights[x, y, :].fill(0)
+                else:
+                    weights[x, y, :] /= np.sum(weights[x, y, :])
 
         def policy(action, state):
             return weights[state[0], state[1], action]
@@ -128,6 +134,10 @@ def main(args):
         else:
             wandb.init(project='reward-weighted-regression',
                        config=args)
+
+    # if requested then seed numpy
+    if args['seed'] is not None:
+        np.random.seed(args['seed'])
 
     env = envs.GridWorld(args['gamma'])
 
