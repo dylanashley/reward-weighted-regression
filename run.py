@@ -66,31 +66,55 @@ def run(env,
         use_wandb=False):
     record = list()
 
+    weights = np.random.uniform(size=env.card.tolist() + [env.num_actions])
+    for x in range(env.card[0]):
+        for y in range(env.card[1]):
+            if env.is_wall((x, y)):
+                weights[x, y, :].fill(0)
+            else:
+                weights[x, y, :] /= np.sum(weights[x, y, :])
+
+    def policy(action, state):  # both modes should have the same initial policy
+        return weights[state[0], state[1], action]
+
+    optimal_values = env.get_optimal_values()
+    state_values = env.get_state_values(policy, epsilon)
+    action_values = env.get_action_values(policy, epsilon)
+
     if mode == 'policy_iteration':
-        action_map = np.random.randint(4, size=env.card, dtype=np.uint8)
+        action_map = np.zeros(env.card, dtype=np.uint8)
 
         def policy(action, state):
             return 1 if action_map[state[0], state[1]] == action else 0
-    else:
-        weights = np.random.uniform(size=env.card.tolist() + [env.num_actions])
-        for x in range(env.card[0]):
-            for y in range(env.card[1]):
-                if env.is_wall((x, y)):
-                    weights[x, y, :].fill(0)
-                else:
-                    weights[x, y, :] /= np.sum(weights[x, y, :])
 
-        def policy(action, state):
-            return weights[state[0], state[1], action]
-
-    optimal_values = env.get_optimal_values()
-
-    for i in range(num_iter):
+    i = 0
+    while True:
         start_time = time.time()
 
-        # update policy one step
-        state_values = env.get_state_values(policy, epsilon)
-        action_values = env.get_action_values(policy, epsilon)
+        # record learning progress
+        value_error = list()
+        for x in range(env.card[0]):
+            for y in range(env.card[1]):
+                if env.is_wall((x, y)) or env.is_terminal((x, y)):
+                    continue
+                value_error.append(optimal_values[x, y] - state_values[x, y])
+        entry = {
+            'Initial State Absolute Value Error':
+                float(abs(optimal_values[1, 1] - state_values[1, 1])),
+            'Initial State Value':
+                float(state_values[1, 1]),
+            'RMSVE':
+                float(np.sqrt(np.mean(np.square(value_error))))
+        }
+        record.append(entry)
+        if use_wandb:
+            wandb.log(entry)
+
+        if i == num_iter:  # make sure we record learning progress before any updates
+            break
+        i += 1
+
+        # update policy
         for x in range(env.card[0]):
             for y in range(env.card[1]):
                 if env.is_wall((x, y)) or env.is_terminal((x, y)):
@@ -102,23 +126,12 @@ def run(env,
                     else:
                         weights[x, y, action] *= action_values[x, y, action] / state_values[x, y]
 
-        # record learning progress
-        value_error = list()
-        for x in range(env.card[0]):
-            for y in range(env.card[1]):
-                if env.is_wall((x, y)) or env.is_terminal((x, y)):
-                    continue
-                value_error.append(optimal_values[x, y] - state_values[x, y])
-        entry = {
-            'Initial State Absolute Value Error': float(abs(optimal_values[1, 1] - state_values[1, 1])),
-            'RMSVE': float(np.sqrt(np.mean(np.square(value_error))))
-        }
-        record.append(entry)
-        if use_wandb:
-            wandb.log(entry)
+        # evaluate new policy
+        state_values = env.get_state_values(policy, epsilon)
+        action_values = env.get_action_values(policy, epsilon)
 
         # print something to show progress
-        print('Iteration: {0} (took {1:.4f} seconds)'.format(i + 1, time.time() - start_time))
+        print('Iteration: {0} (took {1:.4f} seconds)'.format(i, time.time() - start_time))
 
     return record
 

@@ -5,11 +5,13 @@ import numpy as np
 
 class GridWorld:
 
-    def __init__(self, gamma):
+    def __init__(self, gamma, initial_state=(1, 1), terminal_state=(9, 9)):
+        assert((initial_state[0] != terminal_state[0]) or (initial_state[1] != terminal_state[1]))
         self.gamma = gamma
         self.card = np.array([11, 11])
         self.num_actions = 4
-        self.terminal_state = np.array([9, 9])
+        self.initial_state = np.array(initial_state, dtype=np.uint8)
+        self.terminal_state = np.array(terminal_state, dtype=np.uint8)
         self.walls = np.array(
             [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
              [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
@@ -65,7 +67,7 @@ class GridWorld:
         return 1 if self.is_terminal(state) else 0
 
     def reset(self):
-        self.set_state(np.array([1, 1]))
+        self.set_state(self.initial_state)
         return self.get_state()
 
     def step(self, action):
