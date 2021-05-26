@@ -13,27 +13,21 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='')
     parser.add_argument(
-        '--gamma',
-        type=float,
-        required=True,
-        help='')
-    parser.add_argument(
-        '--outfile',
+        'outfile',
         type=str,
-        required=True,
         help='')
     args = vars(parser.parse_args())
-    assert(0 <= args['gamma'] < 1)
     return args
 
 
-def run(gamma, outfile):
+def run(outfile):
     fig, axarr = plt.subplots(1, 3, figsize=(10, 2), dpi=300)
     sns.set_style('ticks')
     sns.set_context('notebook')
 
-    env = envs.GridWorld(gamma)
-    vmin, vmax = env.get_value_range()
+    env = envs.GridWorld()
+    vmin = env.min_value
+    vmax = env.max_value
     nan_grid = np.ones(env.walls.shape, dtype=np.float32) * np.nan
     walls_grid = np.zeros(env.walls.shape, dtype=np.float32)
     walls_grid[env.walls] = np.nan
@@ -47,7 +41,7 @@ def run(gamma, outfile):
                 mask=np.isnan(grid),
                 center=0.5,
                 cmap=sns.color_palette('coolwarm', np.prod(grid.shape) ** 3, as_cmap=True),
-                cbar_kws={'location': 'left', 'label': 'Value', 'ticks': [0.25, 0.5, 0.75, 1.0]},
+                cbar_kws={'location': 'left', 'label': 'Value', 'ticks': [0.0, 0.5, 1.0]},
                 xticklabels=False,
                 yticklabels=False,
                 linewidth=0,
@@ -80,13 +74,13 @@ def run(gamma, outfile):
 
     # load data
     raw_data = list()
-    for i in range(60):
+    for i in range(200):
         with open('{}.json'.format(i), 'r') as infile:
             raw_data.append(json.load(infile))
-    data = {k1: {k2: list() for k2 in ['RMSVE', 'Initial State Value']}
-            for k1 in ['new', 'policy_iteration']}
+    data = {k1: {k2: list() for k2 in ['RMSVE', 'Return']}
+            for k1 in ['reward_weighted_regression', 'policy_iteration']}
     for entry in raw_data:
-        for k2 in ['RMSVE', 'Initial State Value']:
+        for k2 in ['RMSVE', 'Return']:
             data[entry['args']['mode']][k2].append(entry['record'][k2])
     for k1 in data.keys():
         for k2 in data[k1].keys():
@@ -95,9 +89,10 @@ def run(gamma, outfile):
 
     # plot RMSVE
     k2 = 'RMSVE'
-    for i, k1 in enumerate(['new', 'policy_iteration']):
-        label = {'new': 'New', 'policy_iteration': 'Policy Iteration'}[k1]
-        x = np.arange(26)
+    for i, k1 in enumerate(['reward_weighted_regression', 'policy_iteration']):
+        label = {'reward_weighted_regression': 'RWR',
+                 'policy_iteration': 'PI'}[k1]
+        x = np.arange(41)
         y = np.mean(data[k1][k2], axis=0)
         yerr = np.std(data[k1][k2], axis=0)
         axarr[1].plot(
@@ -113,16 +108,16 @@ def run(gamma, outfile):
             alpha=0.3)
     axarr[1].set_xlabel('Iteration', labelpad=5)
     axarr[1].set_ylabel('RMSVE', labelpad=5)
-    axarr[1].set_xticks([0, 10, 20])
+    axarr[1].set_xticks([0, 20, 40])
     axarr[1].set_yticks([0.0, 0.25, 0.5])
-    axarr[1].set_xlim(0, 25.5)
+    axarr[1].set_xlim(0, 41)
     axarr[1].set_ylim(- 0.05, 0.55)
     axarr[1].legend(loc='best', frameon=False)
 
     # plot initial state value
-    k2 = 'Initial State Value'
-    for i, k1 in enumerate(['new', 'policy_iteration']):
-        x = np.arange(26)
+    k2 = 'Return'
+    for i, k1 in enumerate(['reward_weighted_regression', 'policy_iteration']):
+        x = np.arange(41)
         y = np.mean(data[k1][k2], axis=0)
         yerr = np.std(data[k1][k2], axis=0)
         axarr[2].plot(
@@ -136,11 +131,11 @@ def run(gamma, outfile):
             color=colors[i],
             alpha=0.3)
     axarr[2].set_xlabel('Iteration', labelpad=5)
-    axarr[2].set_ylabel('Initial State Value', labelpad=5)
-    axarr[2].set_xticks([0, 10, 20])
+    axarr[2].set_ylabel('Return', labelpad=5)
+    axarr[2].set_xticks([0, 20, 40])
     axarr[2].set_yticks([0.0, 0.1, 0.2])
-    axarr[2].set_xlim(0, 25.5)
-    axarr[2].set_ylim(- 0.005, 0.225)
+    axarr[2].set_xlim(0, 41)
+    axarr[2].set_ylim(- 0.02, 0.22)
 
     # clean up and save plots
     fig.subplots_adjust(bottom=0.25, wspace=0.4)
@@ -148,7 +143,7 @@ def run(gamma, outfile):
 
 
 def main(args):
-    run(args['gamma'], args['outfile'])
+    run(args['outfile'])
 
 
 if __name__ == '__main__':

@@ -16,21 +16,24 @@ def parse_args():
         description='')
     parser.add_argument(
         'mode',
-        choices=['policy_iteration', 'new'],
+        choices=['policy_iteration', 'reward_weighted_regression'],
         help='')
     parser.add_argument(
         '--seed',
         type=int,
+        required=False,
         help='')
     parser.add_argument(
         '--gamma',
         type=float,
-        required=True,
+        required=False,
+        default=0.9,
         help='')
     parser.add_argument(
         '--epsilon',
         type=float,
         required=False,
+        default=1e-6,
         help='')
     parser.add_argument(
         '--num-iter',
@@ -58,6 +61,24 @@ def parse_args():
     return args
 
 
+def get_return(env, policy, epsilon):
+    action_set = np.arange(env.num_actions)
+    discount = 1
+    done = False
+    rv = 0
+    state = env.reset()
+    while not done:
+        logits = np.array([policy(action, state) for action in action_set])
+        assert(abs(sum(logits) - 1) < 1e-2)  # ensure precision error propagation is small
+        action = np.random.choice(action_set, p=logits / sum(logits))
+        state, reward, done = env.step(action)
+        rv += discount * reward
+        discount *= env.gamma
+        if discount < epsilon:
+            break
+    return rv
+
+
 def run(env,
         mode,
         gamma,
@@ -69,7 +90,7 @@ def run(env,
     weights = np.random.uniform(size=env.card.tolist() + [env.num_actions])
     for x in range(env.card[0]):
         for y in range(env.card[1]):
-            if env.is_wall((x, y)):
+            if env._is_wall((x, y)):
                 weights[x, y, :].fill(0)
             else:
                 weights[x, y, :] /= np.sum(weights[x, y, :])
@@ -95,14 +116,14 @@ def run(env,
         value_error = list()
         for x in range(env.card[0]):
             for y in range(env.card[1]):
-                if env.is_wall((x, y)) or env.is_terminal((x, y)):
+                if env._is_wall((x, y)):
                     continue
                 value_error.append(optimal_values[x, y] - state_values[x, y])
         entry = {
             'Initial State Absolute Value Error':
                 float(abs(optimal_values[1, 1] - state_values[1, 1])),
-            'Initial State Value':
-                float(state_values[1, 1]),
+            'Return':
+                get_return(env, policy, epsilon),
             'RMSVE':
                 float(np.sqrt(np.mean(np.square(value_error))))
         }
@@ -117,13 +138,14 @@ def run(env,
         # update policy
         for x in range(env.card[0]):
             for y in range(env.card[1]):
-                if env.is_wall((x, y)) or env.is_terminal((x, y)):
+                if env._is_wall((x, y)) or env._is_terminal((x, y)):
                     continue
                 for action in range(env.num_actions):
                     if mode == 'policy_iteration':
                         if action_values[x, y, action] > action_values[x, y, action_map[x, y]]:
                             action_map[x, y] = action
                     else:
+                        assert(mode == 'reward_weighted_regression')
                         weights[x, y, action] *= action_values[x, y, action] / state_values[x, y]
 
         # evaluate new policy

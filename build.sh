@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT=$(dirname "$0")'/run.py'
-TASKS_PER_FILE=60
+TASKS_PER_FILE=200
 
 # assert command line arguments valid
 if [ "$#" -gt "0" ]
@@ -18,32 +18,26 @@ I=0
 
 ###############################################################################
 
-GAMMA='0.9'
-EPSILON='1e-9'
-NUM_ITER='25'
+NUM_ITER='40'
 
-for SEED in `seq 0 29`; do
+for SEED in `seq 0 99`; do
   MODE='policy_iteration'
   USE_WANDB="$MODE"'_'"$SEED"
   RECORD_OUTFILE="$I"'.json'
   I=$((I + 1))
   ARGS=($MODE
         "--seed=$SEED"
-        "--gamma=$GAMMA"
-        "--epsilon=$EPSILON"
         "--num-iter=$NUM_ITER"
         "--use-wandb=$USE_WANDB"
         "--record-outfile=$RECORD_OUTFILE")
   echo 'python -O '"$SCRIPT"' '"${ARGS[*]}" >> tasks.sh
 
-  MODE='new'
+  MODE='reward_weighted_regression'
   USE_WANDB="$MODE"'_'"$SEED"
   RECORD_OUTFILE="$I"'.json'
   I=$((I + 1))
   ARGS=($MODE
         "--seed=$SEED"
-        "--gamma=$GAMMA"
-        "--epsilon=$EPSILON"
         "--num-iter=$NUM_ITER"
         "--use-wandb=$USE_WANDB"
         "--record-outfile=$RECORD_OUTFILE")
