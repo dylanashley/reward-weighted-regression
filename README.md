@@ -1,3 +1,10 @@
 # reward-weighted-regression
 
-To produce the plots shown in the paper, first, run `build.sh`. This should produce a file called `tasks_0.sh`. Run this file. Once this is done, simply run `plot.py`.
+To produce the plots shown in the paper, first ensure you have python 3.8.0 installed and execute the following in a bash shell:
+```bash
+pip install -r requirements.txt
+./build.sh
+./tasks_0.sh
+./plot.py results.pdf
+```
+After execution has completed, a `results.pdf` file should have been generated.

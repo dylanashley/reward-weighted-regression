@@ -28,7 +28,7 @@ for SEED in `seq 0 99`; do
   ARGS=($MODE
         "--seed=$SEED"
         "--num-iter=$NUM_ITER"
-        "--use-wandb=$USE_WANDB"
+        # "--use-wandb=$USE_WANDB"
         "--record-outfile=$RECORD_OUTFILE")
   echo 'python -O '"$SCRIPT"' '"${ARGS[*]}" >> tasks.sh
 
@@ -39,7 +39,7 @@ for SEED in `seq 0 99`; do
   ARGS=($MODE
         "--seed=$SEED"
         "--num-iter=$NUM_ITER"
-        "--use-wandb=$USE_WANDB"
+        # "--use-wandb=$USE_WANDB"
         "--record-outfile=$RECORD_OUTFILE")
   echo 'python -O '"$SCRIPT"' '"${ARGS[*]}" >> tasks.sh
 done
