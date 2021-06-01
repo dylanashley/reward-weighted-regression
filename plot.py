@@ -21,7 +21,8 @@ def parse_args():
 
 
 def run(outfile):
-    fig, axarr = plt.subplots(1, 3, figsize=(10, 2), dpi=300)
+    fig, axarr = plt.subplots(1, 2, figsize=(6, 2), dpi=300)
+    axarr = np.append(axarr, axarr[1].twinx())
     sns.set_style('ticks')
     sns.set_context('notebook')
 
@@ -107,12 +108,12 @@ def run(outfile):
             color=colors[i],
             alpha=0.3)
     axarr[1].set_xlabel('Iteration', labelpad=5)
-    axarr[1].set_ylabel('RMSVE', labelpad=5)
+    axarr[1].set_ylabel('RMSVE (solid line)', labelpad=7.5)
     axarr[1].set_xticks([0, 20, 40])
     axarr[1].set_yticks([0.0, 0.25, 0.5])
     axarr[1].set_xlim(0, 41)
     axarr[1].set_ylim(- 0.05, 0.55)
-    axarr[1].legend(loc='best', frameon=False)
+    axarr[1].legend(loc='center right', frameon=False)
 
     # plot initial state value
     k2 = 'Return'
@@ -123,6 +124,7 @@ def run(outfile):
         axarr[2].plot(
             x,
             y,
+            linestyle='--',
             color=colors[i])
         axarr[2].fill_between(
             x,
@@ -130,11 +132,8 @@ def run(outfile):
             y + yerr,
             color=colors[i],
             alpha=0.3)
-    axarr[2].set_xlabel('Iteration', labelpad=5)
-    axarr[2].set_ylabel('Return', labelpad=5)
-    axarr[2].set_xticks([0, 20, 40])
+    axarr[2].set_ylabel('Return (dashed line)', labelpad=7.5)
     axarr[2].set_yticks([0.0, 0.1, 0.2])
-    axarr[2].set_xlim(0, 41)
     axarr[2].set_ylim(- 0.02, 0.22)
 
     # clean up and save plots
