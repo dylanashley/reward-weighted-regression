@@ -12,7 +12,7 @@ class GridWorld:
         self.initial_state = np.array(initial_state, dtype=np.uint8)
         self.terminal_state = np.array(terminal_state, dtype=np.uint8)
         self.card = np.array([11, 11])
-        self.min_value = 0
+        self.min_value = 0 #
         self.max_value = 1
         self.num_actions = 4
         self.walls = np.array(
