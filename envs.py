@@ -12,8 +12,9 @@ class GridWorld:
         self.initial_state = np.array(initial_state, dtype=np.uint8)
         self.terminal_state = np.array(terminal_state, dtype=np.uint8)
         self.card = np.array([11, 11])
-        self.min_value = 0 #
-        self.max_value = 1
+        self.min_reward = 0.01
+        self.min_value = 0
+        self.max_value = 1+self.min_reward*1/(1-gamma) # just for heat map plot scaling
         self.num_actions = 4
         self.walls = np.array(
             [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -79,7 +80,7 @@ class GridWorld:
     def get_reward(self, old_state, new_state):
         assert(self._is_valid(old_state))
         assert(self._is_valid(new_state))
-        return 1 if self._is_terminal(new_state) and not self._is_terminal(old_state) else 0
+        return 1 if self._is_terminal(new_state) and not self._is_terminal(old_state) else self.min_reward
 
     def reset(self):
         self.set_state(self.initial_state)
@@ -91,7 +92,7 @@ class GridWorld:
         new_state = self.get_next_state(action)
         self.set_state(new_state)
         reward = self.get_reward(old_state, new_state)
-        done = self._is_terminal(new_state)
+        done = False # self._is_terminal(new_state)
         return new_state, reward, done
 
     def render(self, show=True):
@@ -148,19 +149,20 @@ class GridWorld:
                 if self._is_wall((x, y)):
                     continue
                 queue.append((x, y))
-        rv[self.terminal_state[0], self.terminal_state[1]] = 0
+        rv[self.terminal_state[0], self.terminal_state[1]] = self.min_reward*1.0/(1-self.gamma) #0
 
         while queue:
             queue.sort(key=lambda v: rv[v[0], v[1]])
             x1, y1 = queue.pop()
-            reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else 0
+            #reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else 0
+            reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else self.min_reward
             neighbours = get_neighbours((x1, y1))
             for x2, y2 in neighbours:
                 if rv[x2, y2] < reward + self.gamma * rv[x1, y1]:
                     rv[x2, y2] = reward + self.gamma * rv[x1, y1]
 
         # clean up
-        rv[self.terminal_state[0], self.terminal_state[1]] = 0
+        #rv[self.terminal_state[0], self.terminal_state[1]] = 0
         for x in range(self.card[0]):
             for y in range(self.card[1]):
                 state = np.array([x, y])

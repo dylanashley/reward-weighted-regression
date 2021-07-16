@@ -138,7 +138,7 @@ def run(env,
         # update policy
         for x in range(env.card[0]):
             for y in range(env.card[1]):
-                if env._is_wall((x, y)) or env._is_terminal((x, y)):
+                if env._is_wall((x, y)): # or env._is_terminal((x, y)):
                     continue
                 for action in range(env.num_actions):
                     if mode == 'policy_iteration':
