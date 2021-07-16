@@ -12,7 +12,7 @@ class GridWorld:
         self.initial_state = np.array(initial_state, dtype=np.uint8)
         self.terminal_state = np.array(terminal_state, dtype=np.uint8)
         self.card = np.array([11, 11])
-        self.min_reward = 0.01
+        self.min_reward = 0.001
         self.min_value = 0
         self.max_value = 1+self.min_reward*1/(1-gamma) # just for heat map plot scaling
         self.num_actions = 4
@@ -131,14 +131,10 @@ class GridWorld:
 
         def get_neighbours(state):
             rv = list()
-            if not self._is_wall((state[0], state[1] - 1)):
-                rv.append((state[0], state[1] - 1))
-            if not self._is_wall((state[0] + 1, state[1])):
-                rv.append((state[0] + 1, state[1]))
-            if not self._is_wall((state[0], state[1] + 1)):
-                rv.append((state[0], state[1] + 1))
-            if not self._is_wall((state[0] - 1, state[1])):
-                rv.append((state[0] - 1, state[1]))
+            for neighbour_delta in np.array([[0,-1],[1,0],[0,1],[-1,0]]) :
+                neighbour_state = np.array(state) + neighbour_delta
+                if not self._is_wall(neighbour_state) and not self._is_terminal(neighbour_state) :
+                    rv.append(neighbour_state)   
             return rv
 
         rv = np.zeros(self.card, dtype=np.float32)
@@ -154,7 +150,6 @@ class GridWorld:
         while queue:
             queue.sort(key=lambda v: rv[v[0], v[1]])
             x1, y1 = queue.pop()
-            #reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else 0
             reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else self.min_reward
             neighbours = get_neighbours((x1, y1))
             for x2, y2 in neighbours:
@@ -162,7 +157,6 @@ class GridWorld:
                     rv[x2, y2] = reward + self.gamma * rv[x1, y1]
 
         # clean up
-        #rv[self.terminal_state[0], self.terminal_state[1]] = 0
         for x in range(self.card[0]):
             for y in range(self.card[1]):
                 state = np.array([x, y])

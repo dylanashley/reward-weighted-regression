@@ -74,7 +74,7 @@ def run(outfile):
 
     # load data
     raw_data = list()
-    for i in range(200):
+    for i in range(20): #200
         with open('{}.json'.format(i), 'r') as infile:
             raw_data.append(json.load(infile))
     data = {k1: {k2: list() for k2 in ['RMSVE', 'Return']}
@@ -135,7 +135,7 @@ def run(outfile):
     axarr[2].set_xticks([0, 20, 40])
     axarr[2].set_yticks([0.0, 0.1, 0.2])
     axarr[2].set_xlim(0, 41)
-    axarr[2].set_ylim(- 0.02, 0.22)
+    axarr[2].set_ylim(- 0.02, 0.24)
 
     # clean up and save plots
     fig.subplots_adjust(bottom=0.25, wspace=0.4)
