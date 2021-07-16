@@ -135,7 +135,7 @@ def run(outfile):
     axarr[2].set_xticks([0, 20, 40])
     axarr[2].set_yticks([0.0, 0.1, 0.2])
     axarr[2].set_xlim(0, 41)
-    axarr[2].set_ylim(- 0.02, 0.24)
+    axarr[2].set_ylim(- 0.02, 0.23)
 
     # clean up and save plots
     fig.subplots_adjust(bottom=0.25, wspace=0.4)

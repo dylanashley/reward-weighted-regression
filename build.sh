@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT=$(dirname "$0")'/run.py'
-TASKS_PER_FILE=20 #200
+TASKS_PER_FILE=200 #200
 
 # assert command line arguments valid
 if [ "$#" -gt "0" ]
@@ -20,7 +20,7 @@ I=0
 
 NUM_ITER='40'
 
-for SEED in `seq 0 9`; do #99
+for SEED in `seq 0 99`; do #99
   MODE='policy_iteration'
   USE_WANDB="$MODE"'_'"$SEED"
   RECORD_OUTFILE="$I"'.json'
