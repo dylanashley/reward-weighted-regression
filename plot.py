@@ -28,7 +28,6 @@ def run(outfile):
     env = envs.GridWorld()
     vmin = env.min_value
     vmax = env.max_value
-    nan_grid = np.ones(env.walls.shape, dtype=np.float32) * np.nan
     walls_grid = np.zeros(env.walls.shape, dtype=np.float32)
     walls_grid[env.walls] = np.nan
     zero_grid = np.zeros(env.walls.shape, dtype=np.float32)
@@ -57,20 +56,6 @@ def run(outfile):
                 linewidth=0,
                 square=True,
                 ax=axarr[0])
-
-    # plot goal
-    nan_grid[9, 9] = 0
-    sns.heatmap(nan_grid,
-                mask=np.isnan(nan_grid),
-                cmap=sns.diverging_palette(0, 0, s=100, l=100, n=1),
-                xticklabels=False,
-                yticklabels=False,
-                cbar=False,
-                linewidth=0,
-                square=True,
-                ax=axarr[0])
-    axarr[0].scatter([9.5], [9.5], marker="x", color="black", s=30)
-    nan_grid[9, 9] = np.nan
 
     # load data
     raw_data = list()
@@ -135,7 +120,7 @@ def run(outfile):
     axarr[2].set_xticks([0, 20, 40])
     axarr[2].set_yticks([0.0, 0.1, 0.2])
     axarr[2].set_xlim(0, 41)
-    axarr[2].set_ylim(- 0.02, 0.22)
+    axarr[2].set_ylim(- 0.02, 0.23)
 
     # clean up and save plots
     fig.subplots_adjust(bottom=0.25, wspace=0.4)
