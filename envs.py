@@ -5,15 +5,16 @@ import numpy as np
 
 class GridWorld:
 
-    def __init__(self, gamma=0.9, initial_state=(1, 1), terminal_state=(9, 9)):
+    def __init__(self, gamma=0.9, initial_state=(1, 1), goal_state=(9, 9)):
         assert(0 <= gamma < 1)
-        assert((initial_state[0] != terminal_state[0]) or (initial_state[1] != terminal_state[1]))
+        assert((initial_state[0] != goal_state[0]) or (initial_state[1] != goal_state[1]))
         self.gamma = gamma
         self.initial_state = np.array(initial_state, dtype=np.uint8)
-        self.terminal_state = np.array(terminal_state, dtype=np.uint8)
+        self.goal_state = np.array(goal_state, dtype=np.uint8)
         self.card = np.array([11, 11])
+        self.min_reward = 0.001
         self.min_value = 0
-        self.max_value = 1
+        self.max_value = 1 + self.min_reward * 1 / (1 - gamma) # for heat map plot scaling
         self.num_actions = 4
         self.walls = np.array(
             [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -28,7 +29,7 @@ class GridWorld:
              [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
              [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=bool)
         assert(self._is_valid(self.initial_state))
-        assert(self._is_valid(self.terminal_state))
+        assert(self._is_valid(self.goal_state))
         self.reset()
 
     def _is_wall(self, state):
@@ -43,9 +44,9 @@ class GridWorld:
             return False
         return True
 
-    def _is_terminal(self, state):
-        return (state[0] == self.terminal_state[0]) and \
-               (state[1] == self.terminal_state[1])
+    def _is_goal(self, state):
+        return (state[0] == self.goal_state[0]) and \
+               (state[1] == self.goal_state[1])
 
     def set_state(self, state):
         assert(self._is_valid(state))
@@ -60,7 +61,7 @@ class GridWorld:
         else:
             state = np.copy(state)
             assert(self._is_valid(state))
-        if not self._is_terminal(state):
+        if not self._is_goal(state):
             if action == 0:
                 if not self._is_wall((state[0], state[1] - 1)):
                     state[1] -= 1
@@ -79,26 +80,26 @@ class GridWorld:
     def get_reward(self, old_state, new_state):
         assert(self._is_valid(old_state))
         assert(self._is_valid(new_state))
-        return 1 if self._is_terminal(new_state) and not self._is_terminal(old_state) else 0
+        return 1 if self._is_goal(new_state) and not self._is_goal(old_state) else self.min_reward
 
     def reset(self):
         self.set_state(self.initial_state)
         return self.get_state()
 
     def step(self, action):
-        assert(not self._is_terminal(self.get_state()))
+        assert(not self._is_goal(self.get_state()))
         old_state = self.get_state()
         new_state = self.get_next_state(action)
         self.set_state(new_state)
         reward = self.get_reward(old_state, new_state)
-        done = self._is_terminal(new_state)
+        done = False
         return new_state, reward, done
 
     def render(self, show=True):
         state = self.get_state()
         sketch = self.walls.astype(np.uint8)
         sketch[state[0], state[1]] = 2
-        sketch[self.terminal_state[0], self.terminal_state[1]] = 3
+        sketch[self.goal_state[0], self.goal_state[1]] = 3
         sketch = self.pretty_print(sketch)
         if show:
             print(sketch)
@@ -130,14 +131,10 @@ class GridWorld:
 
         def get_neighbours(state):
             rv = list()
-            if not self._is_wall((state[0], state[1] - 1)):
-                rv.append((state[0], state[1] - 1))
-            if not self._is_wall((state[0] + 1, state[1])):
-                rv.append((state[0] + 1, state[1]))
-            if not self._is_wall((state[0], state[1] + 1)):
-                rv.append((state[0], state[1] + 1))
-            if not self._is_wall((state[0] - 1, state[1])):
-                rv.append((state[0] - 1, state[1]))
+            for delta in np.array([[0, - 1], [1, 0], [0, 1], [- 1, 0]]):
+                neighbour_state = np.array(state) + delta
+                if not self._is_wall(neighbour_state) and not self._is_goal(neighbour_state):
+                    rv.append(neighbour_state)
             return rv
 
         rv = np.zeros(self.card, dtype=np.float32)
@@ -148,19 +145,18 @@ class GridWorld:
                 if self._is_wall((x, y)):
                     continue
                 queue.append((x, y))
-        rv[self.terminal_state[0], self.terminal_state[1]] = 0
+        rv[self.goal_state[0], self.goal_state[1]] = self.min_reward * 1 / (1 - self.gamma)
 
         while queue:
             queue.sort(key=lambda v: rv[v[0], v[1]])
             x1, y1 = queue.pop()
-            reward = 1 if x1 == self.terminal_state[0] and y1 == self.terminal_state[1] else 0
+            reward = 1 if x1 == self.goal_state[0] and y1 == self.goal_state[1] else self.min_reward
             neighbours = get_neighbours((x1, y1))
             for x2, y2 in neighbours:
                 if rv[x2, y2] < reward + self.gamma * rv[x1, y1]:
                     rv[x2, y2] = reward + self.gamma * rv[x1, y1]
 
         # clean up
-        rv[self.terminal_state[0], self.terminal_state[1]] = 0
         for x in range(self.card[0]):
             for y in range(self.card[1]):
                 state = np.array([x, y])
