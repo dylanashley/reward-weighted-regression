@@ -33,7 +33,7 @@ def parse_args():
         '--epsilon',
         type=float,
         required=False,
-        default=1e-6,
+        default=1e-7,
         help='')
     parser.add_argument(
         '--num-iter',
